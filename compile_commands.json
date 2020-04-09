@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/alex/Programming/OpenCV-AR",
+  "command": "/usr/bin/c++   -isystem /usr/include/opencv4    -std=gnu++11 -o CMakeFiles/OpenCV-AR.dir/main.cpp.o -c /home/alex/Programming/OpenCV-AR/main.cpp",
+  "file": "/home/alex/Programming/OpenCV-AR/main.cpp"
+}
+]
