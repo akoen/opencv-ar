@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/alex/Programming/opencv-ar",
-  "command": "/usr/bin/c++   -isystem /usr/include/opencv4    -std=gnu++11 -o CMakeFiles/opencv-ar.dir/main.cpp.o -c /home/alex/Programming/opencv-ar/main.cpp",
-  "file": "/home/alex/Programming/opencv-ar/main.cpp"
-}
-]
