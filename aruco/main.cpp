@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 using namespace std;
 using namespace cv;
@@ -60,9 +61,11 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
 
   vector<int> markerIds;
   vector<vector<Point2f>> markerCorners, rejectedCandidates;
-  aruco::DetectorParameters parameters;
+  Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
 
   Ptr<aruco::Dictionary> markerDictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50);
+
+  Mat im_src = imread("pete.jpg"); // Source image
 
   VideoCapture vid(0);
 
@@ -78,18 +81,94 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
     if(!vid.read(frame))
       break;
 
-    aruco::detectMarkers(frame, markerDictionary, markerCorners, markerIds);
+    aruco::detectMarkers(frame, markerDictionary, markerCorners, markerIds, parameters, rejectedCandidates);
     aruco::estimatePoseSingleMarkers(markerCorners, arucoSquareDimension, cameraMatrix, distanceCoefficients, rotationVectors, translationVectors);
 
+
+    vector<Point> pts_src;
+    pts_src.push_back(Point(0,0));
+    pts_src.push_back(Point(im_src.cols, 0));
+    pts_src.push_back(Point(im_src.cols, im_src.rows));
+    pts_src.push_back(Point(0, im_src.rows));
+
+    // Display axes on markers
     for(int i = 0; i < markerIds.size(); i++) {
-      aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors[i], translationVectors[i], 0.1f);
+      // aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors[i], translationVectors[i], 0.1f);
+      aruco::drawDetectedMarkers(frame, markerCorners);
+
+      vector<Point> pts_dst;
+      pts_dst.push_back(markerCorners[i][0]);
+      pts_dst.push_back(markerCorners[i][1]);
+      pts_dst.push_back(markerCorners[i][2]);
+      pts_dst.push_back(markerCorners[i][3]);
+
+      Mat h = findHomography(pts_src, pts_dst);
+
+      Mat im_out;
+      warpPerspective(im_src, im_out, h, frame.size());
+      fillConvexPoly(frame, pts_dst, 0, 16);
+
+      frame = frame + im_out;
+      
     }
 
-    imshow("Webcam", frame);
-    if(waitKey(30) >= 0) break;
-  }
+    // vector<Point> pts_dst;
+    // float scalingFac = 0.02;
 
-  return 1;
+    // Point refPt1, refPt2, refPt3, refPt4;
+
+    // vector<int>::iterator it = find(markerIds.begin(), markerIds.end(), 25);
+    // int index = distance(markerIds.begin(), it);
+    // refPt1 = markerCorners.at(index).at(1);
+
+    // // finding top right corner point of the target quadrilateral
+    // it = find(markerIds.begin(), markerIds.end(), 33);
+// index = distance(markerIds.begin(), it);
+      // refPt2 = markerCorners.at(index).at(2);
+
+      // float distance = norm(refPt1 - refPt2);
+        // pts_dst.push_back(Point(refPt1.x - round(scalingFac * distance), refPt1.y - round(scalingFac * distance)));
+        // pts_dst.push_back(Point(refPt2.x - round(scalingFac * distance), refPt2.y - round(scalingFac * distance)));
+
+        // // finding bottom right corner point of the target quadrilateral
+        // it = find(markerIds.begin(), markerIds.end(), 30);
+        // index = std::distance(markerIds.begin(), it);
+        // refPt3 = markerCorners.at(index).at(0);
+        // pts_dst.push_back(Point(refPt3.x + round(scalingFac*distance), refPt3.y + round(scalingFac*distance)));
+
+        // // finding bottom left corner point of the target quadrilateral
+        // it = find(markerIds.begin(), markerIds.end(), 23);
+        // index = std::distance(markerIds.begin(), it);
+        // refPt4 = markerCorners.at(index).at(0);
+        // pts_dst.push_back(Point(refPt4.x - round(scalingFac*distance), refPt4.y + round(scalingFac*distance)));
+
+
+        // Mat h = findHomography(pts_src, pts_dst);
+
+        // Mat warpedImage;
+
+        // warpPerspective(im_src, warpedImage, h, frame.size(), INTER_CUBIC);
+
+        // // Prepare mask to copy from warped image to original frame.
+        // Mat mask = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
+        // fillConvexPoly(mask, pts_dst, Scalar(255, 255, 255), LINE_AA);
+
+        // // Erode the mask to not copy the boundary effects from the warping
+        // Mat element = getStructuringElement( MORPH_RECT, Size(5,5));
+        // //            Mat element = getStructuringElement( MORPH_RECT, Size(3,3));
+        // erode(mask, mask, element);
+
+        // Mat imOut = frame.clone();
+        // warpedImage.copyTo(imOut, mask);
+
+        // Mat concatenatedOutput;
+        // hconcat(frame, imOut, concatenatedOutput);
+    
+        imshow("Webcam", frame);
+        if(waitKey(30) >= 0) break;
+}
+
+return 1;
 }
 
 void cameraCalibration(vector<Mat> calibrationImages, Size boardSize, float squareEdgeLength, Mat& cameraMatrix, Mat& distanceCoefficients) {
