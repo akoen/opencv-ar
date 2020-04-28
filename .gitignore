@@ -1,4 +1,5 @@
-/.ccls-cache
+.ccls-cache/
+*Marker*.jpg
 
 
 # Created by https://www.gitignore.io/api/c++,linux,cmake
