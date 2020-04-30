@@ -8,7 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -92,15 +92,63 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
     pts_src.push_back(Point(0, im_src.rows));
 
     // Display axes on markers
+    // vector<Point> pts_dst;
     for(int i = 0; i < markerIds.size(); i++) {
-      // aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors[i], translationVectors[i], 0.1f);
-      aruco::drawDetectedMarkers(frame, markerCorners);
+      aruco::drawAxis(frame, cameraMatrix, distanceCoefficients, rotationVectors[i], translationVectors[i], 0.1f);
 
-      vector<Point> pts_dst;
-      pts_dst.push_back(markerCorners[i][0]);
-      pts_dst.push_back(markerCorners[i][1]);
-      pts_dst.push_back(markerCorners[i][2]);
-      pts_dst.push_back(markerCorners[i][3]);
+      // pts_dst.push_back(markerCorners[i][0]);
+
+    }
+
+    // Using the detected markers, locate the quadrilateral on the target frame where the new scene is going to be displayed.
+    vector<Point> pts_dst;
+    
+    if(markerIds.size() == 4) {
+
+      Point imageTL {0, 0};
+      Point imageTR {frame.cols, 0};
+      Point imageBL {0, frame.rows};
+      Point imageBR {frame.cols, frame.rows};
+      
+      // Get corners of markers
+      vector<Point2f> corners;
+      int tLeft, tRight, bLeft, bRight;
+      
+      for (int i{0}; i < 4; i++) {
+        for(int c{0}; c < 4; c++) {
+          corners.push_back(markerCorners[i][c]);
+        }
+      }
+
+      // Find points closest to corners
+      vector<int> distancesToTL;
+      for(int i{0}; i < corners.size(); i++) {
+        distancesToTL.push_back(pow(corners[i].x, 2) + pow(corners[i].y, 2));
+      }
+
+      pts_dst.push_back(corners[min_element(distancesToTL.begin(), distancesToTL.end()) - distancesToTL.begin()]);
+
+      vector<int> distancesToTR;
+      for(int i{0}; i < corners.size(); i++) {
+        distancesToTR.push_back(pow(frame.cols - corners[i].x, 2) + pow(corners[i].y, 2));
+      }
+
+      pts_dst.push_back(corners[min_element(distancesToTR.begin(), distancesToTR.end()) - distancesToTR.begin()]);
+
+      vector<int> distancesToBR;
+      for(int i{0}; i < corners.size(); i++) {
+        distancesToBR.push_back(pow(frame.cols - corners[i].x, 2) + pow(frame.rows - corners[i].y, 2));
+      }
+
+      pts_dst.push_back(corners[min_element(distancesToBR.begin(), distancesToBR.end()) - distancesToBR.begin()]);
+
+      vector<int> distancesToBL;
+      for(int i{0}; i < corners.size(); i++) {
+        distancesToBL.push_back(pow(corners[i].x, 2) + pow(frame.rows - corners[i].y, 2));
+      }
+
+      pts_dst.push_back(corners[min_element(distancesToBL.begin(), distancesToBL.end()) - distancesToBL.begin()]);
+
 
       Mat h = findHomography(pts_src, pts_dst);
 
@@ -109,66 +157,14 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
       fillConvexPoly(frame, pts_dst, 0, 16);
 
       frame = frame + im_out;
-      
     }
-
-    // vector<Point> pts_dst;
-    // float scalingFac = 0.02;
-
-    // Point refPt1, refPt2, refPt3, refPt4;
-
-    // vector<int>::iterator it = find(markerIds.begin(), markerIds.end(), 25);
-    // int index = distance(markerIds.begin(), it);
-    // refPt1 = markerCorners.at(index).at(1);
-
-    // // finding top right corner point of the target quadrilateral
-    // it = find(markerIds.begin(), markerIds.end(), 33);
-// index = distance(markerIds.begin(), it);
-      // refPt2 = markerCorners.at(index).at(2);
-
-      // float distance = norm(refPt1 - refPt2);
-        // pts_dst.push_back(Point(refPt1.x - round(scalingFac * distance), refPt1.y - round(scalingFac * distance)));
-        // pts_dst.push_back(Point(refPt2.x - round(scalingFac * distance), refPt2.y - round(scalingFac * distance)));
-
-        // // finding bottom right corner point of the target quadrilateral
-        // it = find(markerIds.begin(), markerIds.end(), 30);
-        // index = std::distance(markerIds.begin(), it);
-        // refPt3 = markerCorners.at(index).at(0);
-        // pts_dst.push_back(Point(refPt3.x + round(scalingFac*distance), refPt3.y + round(scalingFac*distance)));
-
-        // // finding bottom left corner point of the target quadrilateral
-        // it = find(markerIds.begin(), markerIds.end(), 23);
-        // index = std::distance(markerIds.begin(), it);
-        // refPt4 = markerCorners.at(index).at(0);
-        // pts_dst.push_back(Point(refPt4.x - round(scalingFac*distance), refPt4.y + round(scalingFac*distance)));
-
-
-        // Mat h = findHomography(pts_src, pts_dst);
-
-        // Mat warpedImage;
-
-        // warpPerspective(im_src, warpedImage, h, frame.size(), INTER_CUBIC);
-
-        // // Prepare mask to copy from warped image to original frame.
-        // Mat mask = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
-        // fillConvexPoly(mask, pts_dst, Scalar(255, 255, 255), LINE_AA);
-
-        // // Erode the mask to not copy the boundary effects from the warping
-        // Mat element = getStructuringElement( MORPH_RECT, Size(5,5));
-        // //            Mat element = getStructuringElement( MORPH_RECT, Size(3,3));
-        // erode(mask, mask, element);
-
-        // Mat imOut = frame.clone();
-        // warpedImage.copyTo(imOut, mask);
-
-        // Mat concatenatedOutput;
-        // hconcat(frame, imOut, concatenatedOutput);
     
-        imshow("Webcam", frame);
-        if(waitKey(30) >= 0) break;
-}
+    // Show enhanced image
+    imshow("Webcam", frame);
+    if(waitKey(30) >= 0) break;
+  }
 
-return 1;
+  return 1;
 }
 
 void cameraCalibration(vector<Mat> calibrationImages, Size boardSize, float squareEdgeLength, Mat& cameraMatrix, Mat& distanceCoefficients) {
