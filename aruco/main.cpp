@@ -31,13 +31,13 @@ void createArucoMarkers() {
   }
 }
 
-void createKnownBoardPosition(Size boardSize, float squareEdgeLength, vector<Point3f>& corners) {
-  for(int i = 0; i< boardSize.height; i++) {
-    for (int j = 0; j < boardSize.width; j++) {
-      corners.push_back(Point3f(j * squareEdgeLength, i * squareEdgeLength, 0.0f));
+  void createKnownBoardPosition(Size boardSize, float squareEdgeLength, vector<Point3f>& corners) {
+    for(int i = 0; i< boardSize.height; i++) {
+      for (int j = 0; j < boardSize.width; j++) {
+        corners.push_back(Point3f(j * squareEdgeLength, i * squareEdgeLength, 0.0f));
+      }
     }
   }
-}
 
 void getChessboardCorners(vector<Mat> images, vector<vector<Point2f>>& allFoundCorners, bool showResults = false) {
   for (vector<Mat>::iterator iter = images.begin(); iter != images.end(); iter++) {
@@ -119,6 +119,31 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
           corners.push_back(markerCorners[i][c]);
         }
       }
+
+      // Keep only 4 corner points
+      int totalX{0};
+      int totalY{0};
+
+      for(int i{0}; i < corners.size(); i++) {
+        totalX += corners[i].x;
+        totalY += corners[i].y;
+      }
+
+      int avgX = totalX / corners.size();
+      int avgY = totalY / corners.size();
+
+      Point center {avgX, avgY};
+
+      circle(frame, center, 5, Scalar(255, 255, 150));
+
+      // vector<int> distancesToCenter;
+      // for(int i{0}; i < corners.size(); i++) {
+      //   distancesToCenter.push_back(pow(center.x - corners[i].x, 2) + pow(center.y - corners[i].y, 2));
+      // }
+
+      // for(int r{0}; r < 12; r++) {
+      //   corners.erase(corners.begin() + (min_element(distancesToCenter.begin(), distancesToCenter.end()) - distancesToCenter.begin()));
+      // } 
 
       // Find points closest to corners
       vector<int> distancesToTL;
