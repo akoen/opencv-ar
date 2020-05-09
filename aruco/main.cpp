@@ -120,31 +120,6 @@ int startWebcamMonitoring(const Mat& cameraMatrix, const Mat& distanceCoefficien
         }
       }
 
-      // Keep only 4 corner points
-      int totalX{0};
-      int totalY{0};
-
-      for(int i{0}; i < corners.size(); i++) {
-        totalX += corners[i].x;
-        totalY += corners[i].y;
-      }
-
-      int avgX = totalX / corners.size();
-      int avgY = totalY / corners.size();
-
-      Point center {avgX, avgY};
-
-      circle(frame, center, 5, Scalar(255, 255, 150));
-
-      // vector<int> distancesToCenter;
-      // for(int i{0}; i < corners.size(); i++) {
-      //   distancesToCenter.push_back(pow(center.x - corners[i].x, 2) + pow(center.y - corners[i].y, 2));
-      // }
-
-      // for(int r{0}; r < 12; r++) {
-      //   corners.erase(corners.begin() + (min_element(distancesToCenter.begin(), distancesToCenter.end()) - distancesToCenter.begin()));
-      // } 
-
       // Find points closest to corners
       vector<int> distancesToTL;
       for(int i{0}; i < corners.size(); i++) {
